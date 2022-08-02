@@ -1,5 +1,7 @@
 import os
+import sys
 
-val = input("Enter word: ")
-
-os.system(f"dict {val} | less")
+try:
+    os.system(f"dict {sys.argv[1]} | less")
+except:
+    print("\033[1;31;40m Error:\033[1;37;40m Missing Argument")
