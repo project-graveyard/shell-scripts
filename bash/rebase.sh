@@ -1,7 +1,9 @@
+#!/usr/bin/env bash
+
 git filter-branch --env-filter '
-WRONG_EMAIL="saahdavid17@gmail.com@gmail.com"
-NEW_NAME="David Saah"
-NEW_EMAIL="dasorange.hope@gmail.com"
+WRONG_EMAIL="wrong_email"
+NEW_NAME="your_name"
+NEW_EMAIL="new_email"
 
 if [ "$GIT_COMMITTER_EMAIL" = "$WRONG_EMAIL" ]
 then
