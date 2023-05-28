@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -14,14 +13,16 @@ import (
 
 func main() {
 	// get the contents of the directory
-	oldFiles, _ := ioutil.ReadDir("./")
+	oldFiles, _ := os.ReadDir("./")
 
 	// rename old files
 	for i, file := range oldFiles {
-		exec.Command("mv", file.Name(), "v"+strconv.Itoa(i)+".webm").Run()
+		if err := exec.Command("mv", file.Name(), "v"+strconv.Itoa(i)+".webm").Run(); err != nil {
+			log.Fatal(err, "Could not change file name")
+		}
 	}
 
-	newFiles, _ := ioutil.ReadDir("./")
+	newFiles, _ := os.ReadDir("./")
 
 	// create a file to append content
 	f, _ := os.OpenFile("videos.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -31,14 +32,18 @@ func main() {
 
 	// store file names into videos file
 	for _, file := range newFiles {
-		f.WriteString("file " + file.Name() + "\n")
+		if _, err := f.WriteString("file " + file.Name() + "\n"); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// create a script file
 	sf, _ := os.OpenFile("merge.sh", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 
-	sf.WriteString("#!/usr/bin/env bash \n")
-	sf.WriteString("ffmpeg -f concat -safe 0 -i videos.txt -c copy output.webm \n")
+	if _, err := sf.WriteString(`#!/usr/bin/env bash \n
+        ffmpeg -f concat -safe 0 -i videos.txt -c copy output.webm \n`); err != nil {
+		log.Fatal(err, "Could not write to file")
+	}
 
 	// close script file
 	defer sf.Close()
@@ -52,7 +57,10 @@ func main() {
 	if err := exec.Command("bash", "./merge.sh").Run(); err != nil {
 		log.Fatalf("ffmpeg: %s", err)
 	}
-	exec.Command("rm", "videos.txt", "merge.sh").Run()
+
+	if err := exec.Command("rm", "videos.txt", "merge.sh").Run(); err != nil {
+		log.Fatal(err)
+	}
 	s.Stop()
 
 	fmt.Print("Do you want to delete individual video files [y/N]: ")
@@ -63,14 +71,18 @@ func main() {
 	if input == "y" {
 		s.Start()
 		for _, file := range newFiles {
-			exec.Command("rm", file.Name()).Run()
+			if err := exec.Command("rm", file.Name()).Run(); err != nil {
+				log.Fatal(err, "Could not remove file")
+			}
 		}
 		s.Stop()
 
 		fmt.Println("Deleted individual files successfully")
 	} else {
 		for i := 0; i < len(oldFiles); i++ {
-			exec.Command("mv", newFiles[i].Name(), oldFiles[i].Name()).Run()
+			if err := exec.Command("mv", newFiles[i].Name(), oldFiles[i].Name()).Run(); err != nil {
+				log.Fatal(err, "Could not rename file")
+			}
 		}
 	}
 
